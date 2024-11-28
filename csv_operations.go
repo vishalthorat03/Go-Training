@@ -1,3 +1,5 @@
+// Problem Statement:  Building a basic command-line application which can read a csv file and list, query, sort, add, delete entries
+
 package main
 
 import (
