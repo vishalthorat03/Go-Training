@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: log_postgres
+    environment:
+      POSTGRES_USER: log_user
+      POSTGRES_PASSWORD: log_password
+      POSTGRES_DB: log_db
+    ports:
+      - "5433:5432"  # Map host port 5433 to container port 5432
+    networks:
+      - lognet
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "log_user", "-d", "log_db", "-p", "5432"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "5050:80"  # PGAdmin UI accessible on host:5050
+    networks:
+      - lognet
+
+  log_app:
+    build: .
+    container_name: log_app
+    environment:
+      DB_HOST: postgres  # Use service name here
+      DB_USER: log_user
+      DB_PASSWORD: log_password
+      DB_NAME: log_db
+      DB_PORT: 5432  # Use the default port for PostgreSQL inside the container
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres
+    networks:
+      - lognet
+
+networks:
+  lognet:
+    driver: bridge

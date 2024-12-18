@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Updates</title>
+</head>
+<body>
+    <h1>Updates Table</h1>
+    <div>
+        <a href="/view?criticality=Low&page=1"><button>Low</button></a>
+        <a href="/view?criticality=Moderate&page=1"><button>Moderate</button></a>
+        <a href="/view?criticality=Critical&page=1"><button>Critical</button></a>
+    </div>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>FxiletID</th>
+            <th>Name</th>
+            <th>Criticality</th>
+            <th>Relevant Computer Count</th>
+        </tr>
+        {{range .Updates}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{.FxiletID}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.Criticality}}</td>
+            <td>{{.RelevantComputerCount}}</td>
+        </tr>
+        {{end}}
+    </table>
+    <div>
+        {{if .PrevPage}}
+        <a href="/view?criticality={{.Criticality}}&page={{.PrevPage}}"><button>Previous</button></a>
+        {{end}}
+        {{if .NextPage}}
+        <a href="/view?criticality={{.Criticality}}&page={{.NextPage}}"><button>Next</button></a>
+        {{end}}
+    </div>
+</body>
+</html>

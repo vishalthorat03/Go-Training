@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        button, input[type="file"], select {
+            padding: 10px 15px;
+            font-size: 16px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+        button:hover, input[type="file"]:hover, select:hover {
+            background-color: #f0f0f0;
+        }
+        h2 {
+            margin-top: 30px;
+        }
+        .buttons-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .buttons-container button {
+            width: 150px;
+            margin: 5px;
+        }
+        .result-box {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+    </style>
+    <script>
+        async function fetchList() {
+            const response = await fetch('/api/list');
+            const data = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function queryEntries(level) {
+            const response = await fetch(`/api/query?level=${level}`);
+            const data = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function sortEntries(order) {
+            const response = await fetch(`/api/sort?order=${order}`);
+            const data = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function addEntry() {
+            const row = document.getElementById('add-input').value.split(',');
+            await fetch('/api/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(row),
+            });
+            fetchList();
+        }
+
+        async function deleteEntry() {
+            const index = document.getElementById('delete-index').value;
+            await fetch(`/api/delete?index=${index}`, { method: 'DELETE' });
+            fetchList();
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV Manager</h1>
+        <p>{{.Message}}</p>
+
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="csvfile">Select CSV File:</label>
+            <input type="file" id="csvfile" name="csvfile" accept=".csv" required>
+            <button type="submit">Upload File</button>
+        </form>
+
+        <div class="buttons-container">
+            <button onclick="fetchList()">List Entries</button>
+            <button onclick="queryEntries('Low')">Query: Low</button>
+            <button onclick="queryEntries('Moderate')">Query: Moderate</button>
+            <button onclick="queryEntries('Critical')">Query: Critical</button>
+            <button onclick="sortEntries('asc')">Sort: Ascending</button>
+            <button onclick="sortEntries('desc')">Sort: Descending</button>
+        </div>
+
+        <h2>Add Entry</h2>
+        <input id="add-input" placeholder="Enter row as comma-separated values">
+        <button onclick="addEntry()">Add</button>
+
+        <h2>Delete Entry</h2>
+        <input id="delete-index" type="number" placeholder="Enter index">
+        <button onclick="deleteEntry()">Delete</button>
+
+        <div class="result-box">
+            <h2>Result</h2>
+            <pre id="result"></pre>
+        </div>
+    </div>
+</body>
+</html>
