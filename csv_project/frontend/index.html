@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h3 {
+            text-align: center;
+        }
+        form, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Device Management</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label for="csv">Upload CSV File:</label>
+            <input type="file" id="csv" name="csv" accept=".csv">
+            <button type="submit">Upload</button>
+        </form>
+        <h3>Filter Devices</h3>
+        <form action="/showTable" method="get" target="_blank">
+            <label for="deviceName">Device Name:</label>
+            <select name="deviceName" id="deviceName">
+                <option value="">All</option>
+                <option value="Camera">Camera</option>
+                <option value="Desktop">Desktop</option>
+                <option value="Laptop">Laptop</option>
+                <option value="Monitor">Monitor</option>
+                <option value="Printer">Printer</option>
+                <option value="Router">Router</option>
+                <option value="Smartphone">Smartphone</option>
+                <option value="Smartwatch">Smartwatch</option>
+                <option value="Speaker">Speaker</option>
+                <option value="Tablet">Tablet</option>
+            </select>  
+        
+            <label for="deviceType">Device Type:</label>
+            <select name="deviceType" id="deviceType">
+                <option value="">All</option>
+                <option value="Accessory">Accessory</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Peripheral">Peripheral</option>
+            </select>
+
+            <label for="brand">Brand:</label>
+            <select name="brand" id="brand">
+                <option value="">All</option>
+                <option value="Acer">Acer</option>
+                <option value="Apple">Apple</option>
+                <option value="Asus">Asus</option>
+                <option value="Dell">Dell</option>
+                <option value="HP">HP</option>
+                <option value="Lenovo">Lenovo</option>
+                <option value="LG">LG</option>
+                <option value="Microsoft">Microsoft</option>
+                <option value="Samsung">Samsung</option>
+                <option value="Sony">Sony</option>
+            </select>
+
+            <label for="os">Operating System:</label>
+            <select name="os" id="os">
+                <option value="">All</option>
+                <option value="Android">Android</option>
+                <option value="ChromeOS">ChromeOS</option>
+                <option value="iOS">iOS</option>
+                <option value="Linux">Linux</option>
+                <option value="macOS">macOS</option>
+                <option value="Windows">Windows</option>
+            </select>
+
+            <label for="status">Status:</label>
+            <select name="status" id="status">
+                <option value="">All</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Under Repair">Under Repair</option>
+            </select>
+
+            <button type="submit">Filter</button>
+        </form>
+    </div>
+</body>
+</html>
+
