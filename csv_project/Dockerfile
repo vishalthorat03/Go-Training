@@ -1,34 +1,17 @@
-# # Stage 1: Build the Go application
-# FROM golang:1.23 AS builder
-
-# WORKDIR /app
-# COPY go.mod go.sum ./
-# RUN go mod download
-# COPY . .
-# RUN go build -o csv_uploader
-
-# # Stage 2: Use a lightweight image
-# FROM centos:8
-
-# WORKDIR /app
-# RUN yum install -y ca-certificates && update-ca-trust
-
-# COPY --from=builder /app/csv_uploader .
-# COPY frontend ./frontend
-# RUN mkdir uploads
-
-# EXPOSE 4041
-# CMD ["./csv_uploader"]
-
-
 # Stage 1: Build the Go application
-FROM golang:1.23-alpine AS builder
+FROM golang:1.23 AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
+
+# Install the required dependencies
+RUN go get github.com/shirou/gopsutil/cpu
+RUN go get github.com/shirou/gopsutil/mem
+# RUN go get github.com/jackc/pgx/v4
+
 COPY . .
-RUN go build -o csv_uploader
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o csv_uploader
 
 # Stage 2: Use a lightweight Alpine image for runtime
 FROM alpine:latest
@@ -44,6 +27,9 @@ COPY frontend ./frontend
 
 # Create a directory for file uploads
 RUN mkdir uploads
+
+# Debug: List the files in the directory
+RUN ls -l /app
 
 EXPOSE 4041
 

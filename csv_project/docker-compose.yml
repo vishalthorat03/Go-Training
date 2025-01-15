@@ -8,17 +8,17 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/devices
+      - DATABASE_URL=postgres://postgres:password@db:5432/devices
 
   db:
     image: postgres:15
     container_name: postgres_db
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: devices
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: csvdb
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - /home/vishal/docker-volumes/db_data:/var/lib/postgresql/data  # Local system volume
     ports:
       - "5433:5432"
 
@@ -30,9 +30,12 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "4043:80"
+    volumes:
+      - /home/vishal/docker-volumes/pgadmin:/var/lib/pgadmin
+      - /home/vishal/docker-volumes/pgadmin/sessions:/var/lib/pgadmin/sessions
 
 volumes:
-  db_data:
+  db_data: {}
 
 networks:
   app-network:
