@@ -1,15 +1,22 @@
 package handlers
 
 import (
+	"csvproject/utils"
+	"database/sql"
+	"io"
 	"net/http"
 	"sync"
-
-	"csvproject/utils"
 )
 
-// var logger = utils.GetLogger()
-
-func HandleUpload(w http.ResponseWriter, r *http.Request) {
+// HandleUpload processes CSV uploads.
+func HandleUpload(
+	w http.ResponseWriter,
+	r *http.Request,
+	connectDB func() (*sql.DB, error),
+	ensureTable func(*sql.DB) error,
+	readCSV func(io.Reader, chan<- []string, <-chan bool),
+	processBatches func(*sql.DB, <-chan []string, int, <-chan bool),
+) {
 	if r.Method != "POST" {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -18,14 +25,14 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	file := r.Body
 	defer file.Close()
 
-	db, err := utils.ConnectDatabase()
+	db, err := connectDB()
 	if err != nil {
 		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
 
-	if err := utils.EnsureTableExistsAndTruncate(db); err != nil {
+	if err := ensureTable(db); err != nil {
 		http.Error(w, "Failed to prepare table", http.StatusInternalServerError)
 		return
 	}
@@ -40,7 +47,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		utils.ReadCSV(file, rowChannel, pauseProcessing)
+		readCSV(file, rowChannel, pauseProcessing)
 		close(rowChannel)
 	}()
 
@@ -48,7 +55,7 @@ func HandleUpload(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			utils.ProcessBatches(db, rowChannel, workerID, pauseProcessing)
+			processBatches(db, rowChannel, workerID, pauseProcessing)
 		}(i + 1)
 	}
 

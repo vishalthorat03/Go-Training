@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
@@ -10,57 +11,40 @@ import (
 var logger *logrus.Logger
 
 func init() {
+	// Initialize the logger
 	logger = logrus.New()
 
-	// Open log file for appending
-	file, err := os.OpenFile("app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Get the log file path from the environment variable or use a default
+	logFilePath := os.Getenv("LOG_FILE_PATH")
+	if logFilePath == "" {
+		logFilePath = "./app.log" // Default path for non-Docker environments
+	}
+
+	// Ensure the directory exists
+	dir := filepath.Dir(logFilePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Fatalf("Failed to create log directory: %v", err)
+	}
+
+	// Open the log file for appending
+	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		logger.Fatalf("Failed to open log file: %v", err)
 	}
 
-	// Set the log file as the output
-	logger.Out = file
+	// Use io.MultiWriter to write to both the file and stdout (console)
+	logger.Out = io.MultiWriter(file, os.Stdout)
 
-	// Set the log level
+	// Set the log level (can be adjusted to Debug, Error, etc.)
 	logger.SetLevel(logrus.InfoLevel)
 
-	// Set a custom log formatter
+	// Set a custom log formatter (optional, adds timestamps and log formatting)
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})
-
-	// Optional: Add a hook to write logs to both file and stdout (console)
-	logger.AddHook(&logrusHook{file})
 }
 
-// Custom hook to duplicate log entries to a file and stdout
-type logrusHook struct {
-	file *os.File
-}
-
-func (h *logrusHook) Levels() []logrus.Level {
-	return logrus.AllLevels // Hook for all log levels
-}
-
-func (h *logrusHook) Fire(entry *logrus.Entry) error {
-	// Get the log message string and handle any potential errors
-	logMessage, err := entry.String()
-	if err != nil {
-		return err
-	}
-
-	// Write the log message to the file
-	_, err = h.file.WriteString(logMessage)
-	if err != nil {
-		return err
-	}
-
-	// log to stdout here as well
-	fmt.Print(logMessage) // Uncomment to log to stdout
-
-	return nil
-}
-
+// GetLogger returns the logger instance
 func GetLogger() *logrus.Logger {
 	return logger
 }

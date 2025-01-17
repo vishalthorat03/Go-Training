@@ -9,6 +9,15 @@ services:
       - db
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/devices
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "devices", "-h", "db"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
 
   db:
     image: postgres:15
@@ -16,11 +25,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: csvdb
+      POSTGRES_DB: devices
     volumes:
       - /home/vishal/docker-volumes/db_data:/var/lib/postgresql/data  # Local system volume
     ports:
       - "5433:5432"
+    networks:
+      - app-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -33,10 +44,12 @@ services:
     volumes:
       - /home/vishal/docker-volumes/pgadmin:/var/lib/pgadmin
       - /home/vishal/docker-volumes/pgadmin/sessions:/var/lib/pgadmin/sessions
-
-volumes:
-  db_data: {}
+    networks:
+      - app-network
 
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  db_data: {}

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -26,6 +27,7 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 	// Connect to the database
 	db, err := sql.Open("postgres", "postgres://postgres:password@db:5432/csvdb?sslmode=disable")
 	if err != nil {
+		log.Println("Failed to connect to the database:", err)
 		http.Error(w, "Failed to connect to the database", http.StatusInternalServerError)
 		return
 	}
@@ -39,14 +41,14 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	page := r.URL.Query().Get("page")
 	sortColumn := r.URL.Query().Get("sortColumn")
-	sortOrder := r.URL.Query().Get("sortOrder") // "asc" or "desc"
+	sortOrder := r.URL.Query().Get("sortOrder")
 
 	if page == "" {
 		page = "1"
 	}
 
-	pageNum, _ := strconv.Atoi(page)
-	if pageNum <= 0 {
+	pageNum, err := strconv.Atoi(page)
+	if err != nil || pageNum <= 0 {
 		pageNum = 1
 	}
 
@@ -79,6 +81,7 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := db.Query(query)
 	if err != nil {
+		log.Println("Failed to fetch data:", err)
 		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
 		return
 	}
@@ -90,6 +93,7 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 		var device Device
 		err := rows.Scan(&device.ID, &device.DeviceName, &device.DeviceType, &device.Brand, &device.Model, &device.OS, &device.OSVersion, &device.PurchaseDate, &device.WarrantyEnd, &device.Status, &device.Price)
 		if err != nil {
+			log.Println("Failed to read data:", err)
 			http.Error(w, "Failed to read data", http.StatusInternalServerError)
 			return
 		}
@@ -117,6 +121,7 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 	var totalRows int
 	err = db.QueryRow(countQuery).Scan(&totalRows)
 	if err != nil {
+		log.Println("Failed to get total row count:", err)
 		http.Error(w, "Failed to get total row count", http.StatusInternalServerError)
 		return
 	}

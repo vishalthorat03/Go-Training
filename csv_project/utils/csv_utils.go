@@ -11,15 +11,15 @@ import (
 )
 
 const (
-	BatchSize  = 2500
-	MaxWorkers = 20
+	BatchSize  = 20000
+	MaxWorkers = 30
 )
 
 // var logger = GetLogger()
 
 func ReadCSV(file io.Reader, rowChannel chan<- []string, pauseProcessing <-chan bool) {
 	scanner := bufio.NewScanner(file)
-	buffer := make([]byte, 4*1024*1024) // 4MB buffer
+	buffer := make([]byte, 10*1024*1024) // 10MB buffer
 	scanner.Buffer(buffer, len(buffer))
 
 	if !scanner.Scan() {
@@ -32,7 +32,7 @@ func ReadCSV(file io.Reader, rowChannel chan<- []string, pauseProcessing <-chan 
 	for scanner.Scan() {
 		select {
 		case <-pauseProcessing:
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 		default:
 			row := strings.Split(scanner.Text(), ",")
 			rowChannel <- row
@@ -43,32 +43,6 @@ func ReadCSV(file io.Reader, rowChannel chan<- []string, pauseProcessing <-chan 
 		logger.Error("Error reading CSV:", err)
 	}
 }
-
-// func processBatches(db *sql.DB, rowChannel <-chan []string, workerID int, pauseProcessing <-chan bool) {
-// 	var rows [][]string
-
-// 	for {
-// 		select {
-// 		case <-pauseProcessing:
-// 			logger.Infof("Worker %d: Pausing due to resource constraints", workerID)
-// 			time.Sleep(5 * time.Second)
-// 		case row, ok := <-rowChannel:
-// 			if !ok {
-// 				if len(rows) > 0 {
-// 					insertBatch(db, rows, workerID)
-// 				}
-// 				return
-// 			}
-
-// 			rows = append(rows, row)
-// 			if len(rows) >= BatchSize {
-// 				insertBatch(db, rows, workerID)
-// 				rows = nil
-// 			}
-
-// 		}
-// 	}
-// }
 
 // Exported ProcessBatches function
 func ProcessBatches(db *sql.DB, rowChannel <-chan []string, workerID int, pauseProcessing <-chan bool) {
