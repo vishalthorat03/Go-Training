@@ -36,9 +36,12 @@ func main() {
 		utils.ReadCSV,
 		utils.ProcessBatches,
 	))
-	http.HandleFunc("/upload-progress", handlers.UploadProgress)
 	http.HandleFunc("/showTable", handlers.ShowTable)
 
 	// Start the server
-	logger.Fatal(http.ListenAndServe(":4041", nil))
+	err := http.ListenAndServe(":4041", nil)
+	if err != nil {
+		// Log the error string
+		logger.Fatal("Server failed to start: " + err.Error())
+	}
 }

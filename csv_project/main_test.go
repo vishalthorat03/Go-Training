@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
-	"csv_project/handlers"
 	"database/sql"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 
@@ -39,6 +39,20 @@ func mockProcessBatches(db *sql.DB, rowChannel <-chan []string, workerID int, pa
 		_ = row // Avoid unused variable error
 		// You can log or process each row if needed
 	}
+}
+
+func TestMain(m *testing.M) {
+	// Ensure the log directory exists before tests
+	if err := os.MkdirAll("./app", 0755); err != nil {
+		println("Failed to create log directory: ", err)
+		os.Exit(1)
+	}
+
+	// Run tests
+	code := m.Run()
+
+	// Exit with the test result code
+	os.Exit(code)
 }
 
 func TestMain_RootRoute(t *testing.T) {
@@ -78,20 +92,5 @@ func TestMain_UploadRoute(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", resp.StatusCode)
-	}
-}
-
-func TestMain_UploadProgress(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(handlers.UploadProgress))
-	defer server.Close()
-
-	resp, err := http.Get(server.URL + "/upload-progress")
-	if err != nil {
-		t.Fatalf("Failed to make GET request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.Header.Get("Content-Type") != "application/json" {
-		t.Errorf("Expected Content-Type application/json, got %s", resp.Header.Get("Content-Type"))
 	}
 }

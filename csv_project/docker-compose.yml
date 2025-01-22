@@ -8,7 +8,8 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgres://postgres:password@db:5432/devices
+      - DATABASE_URL=postgres://postgres:password@db:5432/csvdb
+
     networks:
       - app-network
     healthcheck:
@@ -18,16 +19,16 @@ services:
       start_period: 30s
       timeout: 5s
 
-
   db:
     image: postgres:15
     container_name: postgres_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: devices
+      POSTGRES_DB: csvdb
     volumes:
-      - /home/vishal/docker-volumes/db_data:/var/lib/postgresql/data  # Local system volume
+      - "/c/Users/thoratvishal.sanjay/Documents/docker-volumes/db_data:/var/lib/postgresql/data"
+      - "./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh" # Mount initialization script
     ports:
       - "5433:5432"
     networks:
@@ -42,8 +43,8 @@ services:
     ports:
       - "4043:80"
     volumes:
-      - /home/vishal/docker-volumes/pgadmin:/var/lib/pgadmin
-      - /home/vishal/docker-volumes/pgadmin/sessions:/var/lib/pgadmin/sessions
+      - "C:/Users/thoratvishal.sanjay/Documents/docker-volumes/pgadmin:/var/lib/pgadmin"
+      - "C:/Users/thoratvishal.sanjay/Documents/docker-volumes/pgadmin/sessions:/var/lib/pgadmin/sessions"
     networks:
       - app-network
 

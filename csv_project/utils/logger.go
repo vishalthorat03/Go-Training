@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,38 +11,59 @@ import (
 
 var logger *logrus.Logger
 
-func init() {
-	// Initialize the logger
-	logger = logrus.New()
+func NewLogger(logFilePath string) (*logrus.Logger, error) {
+	// Create a new logrus logger instance
+	log := logrus.New()
 
-	// Get the log file path from the environment variable or use a default
-	logFilePath := os.Getenv("LOG_FILE_PATH")
-	if logFilePath == "" {
-		logFilePath = "./app.log" // Default path for non-Docker environments
-	}
-
-	// Ensure the directory exists
-	dir := filepath.Dir(logFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		logger.Fatalf("Failed to create log directory: %v", err)
-	}
-
-	// Open the log file for appending
-	file, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Get the current working directory (project root)
+	wd, err := os.Getwd()
 	if err != nil {
-		logger.Fatalf("Failed to open log file: %v", err)
+		return nil, fmt.Errorf("failed to get working directory: %v", err)
 	}
 
-	// Use io.MultiWriter to write to both the file and stdout (console)
-	logger.Out = io.MultiWriter(file, os.Stdout)
+	// Ensure the log path is platform-independent (use filepath.Join to handle OS-specific file paths)
+	fullLogPath := filepath.Join(wd, logFilePath)
 
-	// Set the log level (can be adjusted to Debug, Error, etc.)
-	logger.SetLevel(logrus.InfoLevel)
+	// Ensure the directory exists before opening the file
+	dir := filepath.Dir(fullLogPath) // Extract directory from path
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log directory: %v", err)
+	}
 
-	// Set a custom log formatter (optional, adds timestamps and log formatting)
-	logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
+	// Open or create the log file
+	file, err := os.OpenFile(fullLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file: %v", err)
+	}
+
+	// Use io.MultiWriter to write to both stdout and the log file
+	log.SetOutput(io.MultiWriter(os.Stdout, file))
+
+	// Optionally set log level
+	log.SetLevel(logrus.DebugLevel)
+
+	// Set the log format with custom time format (ISO8601-like format)
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,                       // Enable full timestamp
+		TimestampFormat: "2006-01-02T15:04:05.000Z", // Set the desired timestamp format
+		DisableColors:   true,                       // Disable color codes in the logs
 	})
+
+	// Log the initialization message
+	log.Info("Logger initialized successfully.")
+
+	return log, nil
+}
+
+func init() {
+	// Initialize the logger with the path to the log file
+	logFilePath := "app/app.log" // Path relative to project root
+	var err error
+	logger, err = NewLogger(logFilePath)
+	if err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 // GetLogger returns the logger instance

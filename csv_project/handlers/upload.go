@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"csvproject/utils"
+	"csv_project/utils"
 	"database/sql"
 	"io"
 	"net/http"
 	"sync"
 )
+
+var logger = utils.GetLogger()
 
 // HandleUpload processes CSV uploads.
 func HandleUpload(
@@ -18,6 +20,7 @@ func HandleUpload(
 	processBatches func(*sql.DB, <-chan []string, int, <-chan bool),
 ) {
 	if r.Method != "POST" {
+		logger.Errorf("Invalid request method: %s", r.Method)
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
@@ -27,12 +30,14 @@ func HandleUpload(
 
 	db, err := connectDB()
 	if err != nil {
+		logger.Errorf("Failed to connect to database: %v", err)
 		http.Error(w, "Failed to connect to database", http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
 
 	if err := ensureTable(db); err != nil {
+		logger.Errorf("Failed to prepare table: %v", err)
 		http.Error(w, "Failed to prepare table", http.StatusInternalServerError)
 		return
 	}
@@ -47,6 +52,7 @@ func HandleUpload(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		logger.Info("Started reading CSV data")
 		readCSV(file, rowChannel, pauseProcessing)
 		close(rowChannel)
 	}()
@@ -55,11 +61,14 @@ func HandleUpload(
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
+			logger.Infof("Worker %d started processing batches", workerID)
 			processBatches(db, rowChannel, workerID, pauseProcessing)
 		}(i + 1)
 	}
 
 	wg.Wait()
 	close(stopMonitor)
+
+	logger.Info("Upload completed successfully")
 	w.Write([]byte("Upload completed successfully"))
 }
