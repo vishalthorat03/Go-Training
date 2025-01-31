@@ -5,6 +5,8 @@ services:
     build: .
     ports:
       - "4041:4041"
+    volumes:
+      - ./logs:/app/app/logs
     depends_on:
       - db
     environment:

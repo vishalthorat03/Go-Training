@@ -15,6 +15,7 @@ func WrapHandleUpload(
 	readCSV func(io.Reader, chan<- []string, <-chan bool),
 	processBatches func(*sql.DB, <-chan []string, int, <-chan bool),
 ) http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		handlers.HandleUpload(w, r, connectDB, ensureTable, readCSV, processBatches)
 	}

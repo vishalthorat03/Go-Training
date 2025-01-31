@@ -52,7 +52,7 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 		pageNum = 1
 	}
 
-	rowsPerPage := 100
+	rowsPerPage := 1000
 	offset := (pageNum - 1) * rowsPerPage
 
 	// Build SQL query with filters and sorting
@@ -72,13 +72,17 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 	if status != "" {
 		query += fmt.Sprintf(" AND status = '%s'", status)
 	}
+
+	// Handling sorting based on query parameters
 	if sortColumn == "purchasedate" || sortColumn == "warrantyend" || sortColumn == "price" {
 		if sortOrder == "asc" || sortOrder == "desc" {
 			query += fmt.Sprintf(" ORDER BY %s %s", sortColumn, sortOrder)
 		}
 	}
+	// Apply LIMIT and OFFSET for pagination
 	query += fmt.Sprintf(" LIMIT %d OFFSET %d", rowsPerPage, offset)
 
+	// Fetch the devices for the current page
 	rows, err := db.Query(query)
 	if err != nil {
 		log.Println("Failed to fetch data:", err)
@@ -87,7 +91,6 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	// Fetch data into a slice
 	var devices []Device
 	for rows.Next() {
 		var device Device
@@ -100,35 +103,21 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 		devices = append(devices, device)
 	}
 
-	// Get total row count for pagination
-	countQuery := "SELECT COUNT(*) FROM devices WHERE 1=1"
-	if deviceType != "" {
-		countQuery += fmt.Sprintf(" AND devicetype = '%s'", deviceType)
-	}
-	if deviceName != "" {
-		countQuery += fmt.Sprintf(" AND devicename = '%s'", deviceName)
-	}
-	if brand != "" {
-		countQuery += fmt.Sprintf(" AND brand = '%s'", brand)
-	}
-	if os != "" {
-		countQuery += fmt.Sprintf(" AND os = '%s'", os)
-	}
-	if status != "" {
-		countQuery += fmt.Sprintf(" AND status = '%s'", status)
-	}
+	// Query for the total row count using the reltuples estimate from pg_class
+	countQuery := "SELECT reltuples::BIGINT AS estimate FROM pg_class WHERE relname = 'devices'"
 
-	var totalRows int
+	var totalRows int64
 	err = db.QueryRow(countQuery).Scan(&totalRows)
 	if err != nil {
-		log.Println("Failed to get total row count:", err)
-		http.Error(w, "Failed to get total row count", http.StatusInternalServerError)
+		log.Println("Failed to fetch the filtered row count:", err)
+		http.Error(w, "Failed to fetch the filtered row count", http.StatusInternalServerError)
 		return
 	}
 
+	// Calculate total pages
 	totalPages := int(math.Ceil(float64(totalRows) / float64(rowsPerPage)))
 
-	// Render HTML with embedded CSS
+	// Render the HTML with pagination
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `
 	<!DOCTYPE html>
@@ -211,6 +200,7 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 				</tr>
 	`)
 
+	// Display the devices
 	for _, device := range devices {
 		fmt.Fprintf(w, `
 			<tr>
@@ -229,26 +219,21 @@ func ShowTable(w http.ResponseWriter, r *http.Request) {
 		`, device.ID, device.DeviceName, device.DeviceType, device.Brand, device.Model, device.OS, device.OSVersion, device.PurchaseDate, device.WarrantyEnd, device.Status, device.Price)
 	}
 
-	// Pagination controls and record count
+	// Pagination controls
 	fmt.Fprintf(w, `
 			</table>
-			<p>%d records found</p>
-			<div>
+			<p>%d devices found</p>
+			<div class="pagination">
 	`, totalRows)
 
+	// Pagination links
 	if pageNum > 1 {
-		fmt.Fprintf(w, `<a href="?page=1" class="button">First</a> `)
-		fmt.Fprintf(w, `<a href="?page=%d" class="button">Prev</a> `, pageNum-1)
+		fmt.Fprintf(w, `<a href="?deviceName=%s&deviceType=%s&brand=%s&os=%s&status=%s&page=1" class="button">First</a>`, deviceName, deviceType, brand, os, status)
+		fmt.Fprintf(w, `<a href="?deviceName=%s&deviceType=%s&brand=%s&os=%s&status=%s&page=%d" class="button">Previous</a>`, deviceName, deviceType, brand, os, status, pageNum-1)
 	}
 	if pageNum < totalPages {
-		fmt.Fprintf(w, `<a href="?page=%d" class="button">Next</a> `, pageNum+1)
-		fmt.Fprintf(w, `<a href="?page=%d" class="button">Last</a> `, totalPages)
+		fmt.Fprintf(w, `<a href="?deviceName=%s&deviceType=%s&brand=%s&os=%s&status=%s&page=%d" class="button">Next</a>`, deviceName, deviceType, brand, os, status, pageNum+1)
+		fmt.Fprintf(w, `<a href="?deviceName=%s&deviceType=%s&brand=%s&os=%s&status=%s&page=%d" class="button">Last</a>`, deviceName, deviceType, brand, os, status, totalPages)
 	}
-
-	fmt.Fprintf(w, `
-			</div>
-		</div>
-	</body>
-	</html>
-	`)
+	fmt.Fprintf(w, `</div></div></body></html>`)
 }

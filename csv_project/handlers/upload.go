@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"csv_project/utils"
+	"csvproject/utils"
 	"database/sql"
 	"io"
 	"net/http"
